@@ -1,23 +1,24 @@
 #include <Arduino.h>
 
-// ================== CẤU HÌNH BLYNK ====================
+// ========== BLYNK CONFIG ==========
 #define BLYNK_TEMPLATE_ID "TMPL6ckZ1P8Ag"
 #define BLYNK_TEMPLATE_NAME "smart_lock"
 #define BLYNK_AUTH_TOKEN "nhx-k2X_t0SPD4L0ToN2Yl2JpYb1_gWb"
 
-// ================== THƯ VIỆN MODULE ===================
+// ========== MODULE LIBRARIES ==========
 #include "display.h"
 #include "buzzer.h"
 #include "relay_control.h"
 #include "blynk_manager.h"
 #include "fingerprint.h"
 #include "rfid.h"
+#include "smartlocksystem.h"
 
-// ================== CẤU HÌNH ===========================
+// ========== SYSTEM VARIABLES ==========
 const int MAX_FAILED_ATTEMPTS = 5;
 int failedAttempts = 0;
 
-// ================== HÀM MỞ CỬA ==========================
+// ========== DOOR CONTROL ==========
 void unlockDoor() {
   Display_show("Mo cua", "Thanh cong");
   Buzzer_beep();
@@ -26,7 +27,6 @@ void unlockDoor() {
   failedAttempts = 0;
 }
 
-// ================== HÀM XỬ LÝ KHI SAI ===================
 void handleFailed() {
   failedAttempts++;
   Buzzer_beepError();
@@ -38,8 +38,8 @@ void handleFailed() {
   }
 }
 
-// ================== SETUP ==============================
-void setup() {
+// ========== INIT ==========
+void smartHomeSystemInit() {
   Serial.begin(115200);
 
   Display_setup();
@@ -55,12 +55,12 @@ void setup() {
   Display_show("San sang", "Quet de vao");
 }
 
-// ================== LOOP ===============================
-void loop() {
+// ========== LOOP ==========
+void smartHomeSystemUpdate() {
   BlynkManager_loop();
   Buzzer_loop();
 
-  // === Kiểm tra vân tay ===
+  // Kiểm tra vân tay
   if (Fingerprint_detected()) {
     if (Fingerprint_verify()) {
       unlockDoor();
@@ -71,10 +71,10 @@ void loop() {
     }
   }
 
-  // === Kiểm tra thẻ RFID ===
-  String cardID = RFID_readCard();  // Đọc thẻ RFID
+  // Kiểm tra thẻ RFID
+  String cardID = RFID_readCard();
   if (cardID != "") {
-    if (RFID_checkValid(cardID)) {  // Kiểm tra thẻ hợp lệ
+    if (RFID_checkValid(cardID)) {
       unlockDoor();
     } else {
       Display_show("The khong hop le", "");
@@ -83,7 +83,7 @@ void loop() {
     }
   }
 
-  // === Thêm vân tay qua Blynk ===
+  // Thêm vân tay
   if (BlynkManager_shouldEnrollFingerprint()) {
     Display_show("Them van tay", "");
     if (Fingerprint_enroll()) {
@@ -96,7 +96,7 @@ void loop() {
     BlynkManager_clearFlags();
   }
 
-  // === Thêm thẻ RFID qua Blynk ===
+  // Thêm thẻ RFID
   if (BlynkManager_shouldEnrollRFID()) {
     Display_show("Cho quet the", "");
     if (RFID_enroll()) {
@@ -109,7 +109,7 @@ void loop() {
     BlynkManager_clearFlags();
   }
 
-  // === Xóa toàn bộ dữ liệu qua Blynk ===
+  // Xóa dữ liệu
   if (BlynkManager_shouldDeleteAll()) {
     Display_show("Xoa du lieu", "");
     Fingerprint_clearAll();
